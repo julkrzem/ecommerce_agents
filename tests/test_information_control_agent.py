@@ -1,5 +1,5 @@
 import pytest
-from agents.information_control_agent import ContextAssesmentAgent
+from agents.context_assesment_agent import ContextAssesmentAgent
 
 
 @pytest.fixture
