@@ -9,7 +9,7 @@ def test_MainAgentSupervisor():
 @pytest.mark.parametrize(
     "question , expected",
     [
-        ("What are customers saying about dresses?", "max iterrations exceeded")
+        ("What are customers saying about dresses?", "answer based on context")
     ]
 )
 
