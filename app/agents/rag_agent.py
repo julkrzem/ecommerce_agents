@@ -2,8 +2,7 @@ from langchain_ollama import OllamaEmbeddings
 from langchain_ollama import ChatOllama
 from langchain_chroma import Chroma
 from langchain_core.prompts import PromptTemplate
-from langchain.output_parsers.json import SimpleJsonOutputParser
-
+from langchain.output_parsers.json import JsonOutputParser
 
 
 class RagAgent():
@@ -19,7 +18,7 @@ class RagAgent():
         self.llm = ChatOllama(model="mistral:7b", 
                  temperature=0)
 
-        db_filter_prompt = PromptTemplate.from_template(
+        self.db_filter_prompt = PromptTemplate.from_template(
             """You are a smart assistant. Your job is to decide if the database should be filtered to answer the user question.
 
             Database fields to filter: 
@@ -43,33 +42,52 @@ class RagAgent():
         
         self.select_filter_prompt = PromptTemplate.from_template(
             """Your job is to prepare a MongoDB syntax for filtering.
-            Each field must have an explicit operator like $eq, $in, etc. 
-            If there are multiple fieds they have to be arranged with $and $or operator depending on the context.
+            If there are multiple fieds they have to be arranged with and/or operator depending on the context.
+            If there is only one field to filter by never use and/or
 
             Context: {question}
 
             Neever change names of key and value only strip any additional data and organise as a valid query:
             {output}
 
-            Return only the query filter and no furrther explaination. ONLY JSON WITH QUERY FILTER in MONGO-DB FORMAT. Remember that multiple filters have to be used in [] with $and or $or
+            Return only the query filter and no furrther explaination.
+
+            {output_format}
+
+            Answer with JSON WITH ONLY QUERY FILTER in MongoDB Query Language (MQL).
             """
             
         )
 
-        self.db_filter_chain = db_filter_prompt | self.llm 
-
+    def needs_filtering(self, question):
+        db_filter_chain = self.db_filter_prompt | self.llm 
+        return db_filter_chain.invoke({"question" : question}).content
+    
     def run(self, question):
 
         retrived_content = ""
 
-        needs_filtering = self.db_filter_chain.invoke({"question" : question}).content
+        filtering = self.needs_filtering(question)
 
-        if "no_filter_needed" in needs_filtering:
+        if "no_filter_needed" in filtering:
             results = self.retriever.invoke(question)
         else:
-            json_parser = SimpleJsonOutputParser()
+            json_parser = JsonOutputParser()
+
+            output_format = '''
+            Output format to filter by multiple fields:
+            {"$and": [
+                {"field_1": {"$eq": "Value_1"}},
+                {"field_2": {"$eq": "Value_2"}}
+                ]
+            }
+
+            Output format if filter by one field:
+            {"field_1": {"$eq": "Value_1"}}
+            '''
+
             select_filters_chain = self.select_filter_prompt | self.llm | json_parser
-            filter_db = select_filters_chain.invoke({"question" : question, "output":needs_filtering})
+            filter_db = select_filters_chain.invoke({"question" : question, "output":filtering, "output_format": output_format})
             print(filter_db)
             results = self.retriever.invoke(question, filter=filter_db)
         
@@ -79,7 +97,7 @@ class RagAgent():
         print(retrived_content)
     
         return retrived_content
-
+    
 # agent = RagAgent()
-# answer = agent.run("What they say about Dresses in the General division?")
-# print(answer)
+# print(agent.run("What they say about Dresses?"))
+# print(agent.run("What they say about Knits in the General Petite division?"))

@@ -42,6 +42,11 @@ class MainAgentSupervisor:
         self.answer_llm = AnswerAgent()
         self.rag_agent = RagAgent()
 
+    def context_assesment(self, collected_context, question: str) -> str:
+        response = self.context_assesment_chain.invoke({"information_context": collected_context, "question": question}).content.upper()
+        return response
+
+
     def invoke(self, question: str) -> str:
         collected_context = ""
         iteration = 0
@@ -50,7 +55,7 @@ class MainAgentSupervisor:
         while iteration < max_iteration:
             iteration += 1
 
-            if "YES" in self.context_assesment_chain.invoke({"information_context": collected_context, "question": question}).content.upper():
+            if "YES" in self.context_assesment(collected_context,question):
                 # return "answer based on info"
                 return self.answer_llm.invoke(collected_context,question)
             else:
@@ -66,7 +71,7 @@ class MainAgentSupervisor:
         return "max iterations exceeded"
     
 
-agent = MainAgentSupervisor()
+# agent = MainAgentSupervisor()
 # print(agent.invoke("What they say about Dresses in the General division?"))
-print(agent.invoke("What they say about Knits?"))
+# print(agent.invoke("What they say about Knits?"))
 # print(agent.invoke("What is the most popular product?"))
