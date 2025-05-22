@@ -7,12 +7,15 @@ def test_MainAgentSupervisor():
 
 
 @pytest.mark.parametrize(
-    "question , expected",
+    "context, question , expected",
     [
-        ("What are customers saying about dresses?", "max iterrations exceeded")
+        ("","What are customers saying about dresses?", False),
+        ("[]", "What are customers saying about dresses?", False),
+        ("Customer 1: Dress is so pretty, Customer 2: I love it, Customer 3: Nice dress", "What are customers saying about dresses?",True),
+        ("Customer 1: I love the website design! Customer 2: The icons shold be bigger","What are customers saying about the website design?", True)
     ]
 )
-
-def test_invoke(test_MainAgentSupervisor, question, expected):
+def test_context_assesment(test_MainAgentSupervisor, context, question, expected):
     agent = test_MainAgentSupervisor
-    assert agent.invoke(question) == expected
+    response = "YES" in agent.context_assesment(context, question)
+    assert response == expected
