@@ -2,10 +2,10 @@ from langchain_ollama import OllamaEmbeddings
 from langchain_ollama import ChatOllama
 from langchain_chroma import Chroma
 from langchain_core.prompts import PromptTemplate
-from langchain.output_parsers.json import JsonOutputParser
+from langchain_core.output_parsers.json import JsonOutputParser
 
 
-class RagAgent():
+class RagAgent:
     def __init__(self):
         self.embeddings = OllamaEmbeddings(model="snowflake-arctic-embed:33m")
         self.vector_store = Chroma(
