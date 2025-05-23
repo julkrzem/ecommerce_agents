@@ -11,7 +11,7 @@ class RagAgent:
         self.vector_store = Chroma(
             collection_name="ecommerce_reviews",
             embedding_function=self.embeddings,
-            persist_directory="./app/vectorstore/chroma_db",
+            persist_directory="./app/database/chroma_db",
         )
         self.retriever = self.vector_store.as_retriever(search_kwargs={"k": 10})
 
@@ -25,8 +25,8 @@ class RagAgent:
             'clothing_id': ID of item that is reviewed; int [0,1205]
             'age': age of the review author; int [18,99]
             'rating': rating the reviewer gave to the product; int [1,5]
-            'division_name': store division; str [General, General Petite, Initmates]
-            'department_name': store department; str [Tops, Dresses, Bottoms, Intimate, Jackets, Trend]
+            'division_name': high level store division; str [General, General Petite, Initmates]
+            'department_name': product department name; str [Tops, Dresses, Bottoms, Intimate, Jackets, Trend]
             'class_name': product type; str [Intimates, Dresses, Pants, Blouses, Knits, Outerwear,Lounge, Sweaters, Skirts, Fine gauge, Sleep, Jackets,Swim, Trend, Jeans, Legwear, Shorts, Layering,Casual bottoms, Chemises]
 
             Question: {question}
@@ -42,15 +42,15 @@ class RagAgent:
         
         self.select_filter_prompt = PromptTemplate.from_template(
             """Your job is to prepare a MongoDB syntax for filtering.
-            If there are multiple fieds they have to be arranged with and/or operator depending on the context.
+            If there are multiple fields they have to be arranged with and/or operator depending on the context.
             If there is only one field to filter by never use and/or
 
             Context: {question}
 
-            Neever change names of key and value only strip any additional data and organise as a valid query:
+            Never change names of key and value only strip any additional data and organize as a valid query:
             {output}
 
-            Return only the query filter and no furrther explaination.
+            Return only the query filter and no further explanation.
 
             {output_format}
 
@@ -97,7 +97,3 @@ class RagAgent:
         print(retrived_content)
     
         return retrived_content
-    
-# agent = RagAgent()
-# print(agent.run("What they say about Dresses?"))
-# print(agent.run("What they say about Knits in the General Petite division?"))

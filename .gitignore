@@ -282,3 +282,4 @@ temp.ipynb
 *.ini
 
 chroma_db
+*.duckdb

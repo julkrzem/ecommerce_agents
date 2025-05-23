@@ -2,6 +2,7 @@ from langchain_ollama import ChatOllama
 from langchain_core.prompts import PromptTemplate
 from answer_agent import AnswerAgent
 from rag_agent import RagAgent
+from statistician_agent import StatistitianAgent
 from langchain.output_parsers.json import SimpleJsonOutputParser
 
 
@@ -11,10 +12,10 @@ class MainAgentSupervisor:
                  temperature=0)
     
         context_assesment_prompt = PromptTemplate.from_template(
-            """You are a smart assistant. Your job is to decide if there is enough information in provided Information Context to answer user question. The decission must be based on the Information Context. 
+            """You are a smart assistant. Your job is to decide if there is enough information in provided Information Context to answer user question. The decision must be based on the Information Context. 
             If the Information Context is empty answer NO.
             If the Information Context is not sufficient answer NO. 
-            If the Information Context provides necessairy information to answer user question answer YES.
+            If the Information Context provides necessary information to answer user question answer YES.
 
             Information Context: {information_context}.
 
@@ -29,9 +30,10 @@ class MainAgentSupervisor:
 
             Agents to select from:
             "rag_agent": performs RAG on reviews in the database. Best to answer the questions about text content of the reviews.
-            "statistical_agent": performs statistical analysis on the reviews database. Best to use when there is a quantity analysis needed.
+            "statistician_agent": performs statistical analysis on the reviews database. Best to use when there is a quantity analysis needed.
 
             "Return a JSON object with an `agent` key, and the exact agent name.
+
 
             """
             
@@ -50,13 +52,12 @@ class MainAgentSupervisor:
     def invoke(self, question: str) -> str:
         collected_context = ""
         iteration = 0
-        max_iteration = 2
+        max_iteration = 3
 
         while iteration < max_iteration:
             iteration += 1
 
             if "YES" in self.context_assesment(collected_context,question):
-                # return "answer based on info"
                 return self.answer_llm.invoke(collected_context,question)
             else:
                 agent = self.agent_selection_chain.invoke({"question":question})
@@ -65,13 +66,13 @@ class MainAgentSupervisor:
                     collected_context += retrived_content
                     print("RAG Agent used")
 
-                if agent["agent"] == "statistical_agent":
-                    return "STAT agent"
+                if agent["agent"] == "statistician_agent":
+                    print("STAT Agent used")
+                    agent = StatistitianAgent()
+                    collected_context += agent.run(question)
                 
         return "max iterations exceeded"
     
-
-# agent = MainAgentSupervisor()
-# print(agent.invoke("What they say about Dresses in the General division?"))
-# print(agent.invoke("What they say about Knits?"))
-# print(agent.invoke("What is the most popular product?"))
+agent = MainAgentSupervisor()
+question = "What type of product (class_name) is getting the most extreme standar deviation in the rating column??"
+print(agent.invoke(question))

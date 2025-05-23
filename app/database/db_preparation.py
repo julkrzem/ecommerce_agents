@@ -5,7 +5,7 @@ from langchain_core.documents import Document
 
 df = pd.read_csv("app/data/sample.csv")
 
-db = "./app/vectorstore/chroma_db"
+db = "./app/database/chroma_db"
 columns = ['Comment_id','Clothing ID', 'Age', 'Rating', 'Recommended IND', 'Positive Feedback Count',
        'Division Name', 'Department Name', 'Class Name', 'Product_name']
 
@@ -44,11 +44,11 @@ def prepare_documents(df, columns):
                      idx += 1
        return documents, ids
 
-vectorstore = RagAgent()
+database = RagAgent()
 
-# create_vectorstore = not os.path.exists(db)
+# create_database = not os.path.exists(db)
 
 documents, ids = prepare_documents(df, columns)
 print(documents)
-vectorstore.vector_store.add_documents(documents=documents, ids=ids)
+database.vector_store.add_documents(documents=documents, ids=ids)
 print("db created")
