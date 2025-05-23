@@ -4,10 +4,13 @@ from answer_agent import AnswerAgent
 from rag_agent import RagAgent
 from statistician_agent import StatisticianAgent
 from langchain.output_parsers.json import SimpleJsonOutputParser
+from langchain_core.messages.ai import AIMessage
+from langchain.memory import ConversationBufferMemory
 
 
 class MainAgentSupervisor:
-    def __init__(self):
+    def __init__(self, memory):
+        self.memory = memory
         llm = ChatOllama(model="mistral:7b",
                          temperature=0)
         
@@ -39,37 +42,46 @@ class MainAgentSupervisor:
         json_parser = SimpleJsonOutputParser()
         self.context_assesment_chain = context_assesment_prompt | llm
         self.agent_selection_chain = agent_selection_prompt | llm | json_parser
-        self.answer_llm = AnswerAgent()
-        self.rag_agent = RagAgent()
-        self.statisticianAgent = StatisticianAgent()
+        self.answer_llm = AnswerAgent(self.memory)
+        self.rag_agent = RagAgent(self.memory)
+        self.statistician_agent = StatisticianAgent(self.memory)
+        self.collected_context = ""
 
-    def context_assesment(self, collected_context, question: str) -> str:
-        response = self.context_assesment_chain.invoke({"information_context": collected_context, "question": question}).content.upper()
+    def context_assesment(self, question: str) -> str:
+        response = self.context_assesment_chain.invoke({"information_context": self.collected_context, "question": question}).content.upper()
         return response
 
 
     def invoke(self, question: str) -> str:
-        collected_context = ""
+
+        for message in self.memory.chat_memory.messages:
+            self.collected_context += "\n"+message.content
+
+        if len(self.collected_context) >= 4000:
+            self.collected_context = self.collected_context[-4000:]
+
+        
         iteration = 0
         max_iteration = 3
 
         while iteration < max_iteration:
             iteration += 1
 
-            if "YES" in self.context_assesment(collected_context,question):
-                return self.answer_llm.invoke(collected_context,question)
+            if "YES" in self.context_assesment(question):
+                return self.answer_llm.invoke(self.collected_context,question)
             else:
                 agent = self.agent_selection_chain.invoke({"question":question})
 
                 if agent["agent"] == "rag_agent":
                     print("RAG Agent used")
                     retrived_content = self.rag_agent.run(question)
-                    collected_context += retrived_content
+                    self.collected_context += retrived_content
                     
 
                 if agent["agent"] == "statistician_agent":
                     print("STAT Agent used")
-                    agent = self.statisticianAgent
-                    collected_context += agent.run(question)
-                
+                    agent = self.statistician_agent
+                    retrived_content = agent.run(question)
+                    self.collected_context += retrived_content
+       
         return "max iterations exceeded"

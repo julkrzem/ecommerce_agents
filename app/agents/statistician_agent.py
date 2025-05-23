@@ -1,10 +1,13 @@
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
+from langchain.memory import ConversationBufferMemory
+from langchain_core.messages.ai import AIMessage
 import re
 import duckdb
 
 class StatisticianAgent:
-    def __init__(self):
+    def __init__(self, memory):
+        self.memory = memory
         self.llm = ChatOllama(model="mistral:7b", 
                  temperature=0)
         sql_system_message = """
@@ -102,6 +105,7 @@ class StatisticianAgent:
         with duckdb.connect("app/database/reviews.duckdb") as con:
             result = con.execute(query).fetchdf()
         answer = result.to_string()
+        self.memory.chat_memory.add_message(AIMessage(answer))
         return answer
 
     def run(self, question: str)->str:

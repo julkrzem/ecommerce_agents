@@ -2,10 +2,13 @@ from langchain_ollama import OllamaEmbeddings
 from langchain_ollama import ChatOllama
 from langchain_chroma import Chroma
 from langchain_core.prompts import PromptTemplate
+from langchain.memory import ConversationBufferMemory
+from langchain_core.messages.ai import AIMessage
 import json
 
 class RagAgent:
-    def __init__(self):
+    def __init__(self, memory):
+        self.memory = memory
         self.embeddings = OllamaEmbeddings(model="snowflake-arctic-embed:33m")
         self.vector_store = Chroma(
             collection_name="ecommerce_reviews",
@@ -106,5 +109,7 @@ class RagAgent:
 
         for res in results:
             retrived_content += f" - {res.page_content} \n"
-    
+        
+        self.memory.chat_memory.add_message(AIMessage(retrived_content))
+   
         return retrived_content
