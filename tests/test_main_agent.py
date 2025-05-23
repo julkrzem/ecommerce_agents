@@ -1,5 +1,6 @@
 import pytest
-from agents.main_agent import MainAgentSupervisor
+from app.agents.main_agent import MainAgentSupervisor
+from tests.LLM_evaluator import LlmEvaluator
 
 @pytest.fixture
 def test_MainAgentSupervisor():

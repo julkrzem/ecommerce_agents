@@ -39,14 +39,14 @@ class StatisticianAgent:
         In plan include only steps that are possible to execute with SQL, but do not output any SQL, only clear instructions for analysis. Do not over complicate, and try to reduce the necessary amount of queries to minimum while maintaining the aim of user question. Do not suggest using any other programs or programing languages other than SQL.
 
         There is only one table: "reviews"
-        With columns: ['clothing_id','age','title','review_text','rating','recommended_ind', 'positive_feedback_count','division_name','department_name','class_name','product_name']
+        With columns: ['clothing_id','age','title','review_text','rating','recommended_ind', 'positive_feedback_count','division_name','department_name','class_name']
 
         Promote usage of statistical functions like: VAR_POP(), VAR_SAMP(), STDDEV_POP(), STDDEV_SAMP(), AVG()
 
         Always output with the descriptive data for example if you identified a category of the lowest value always output both name of category and the value. Avoid limiting to one result, always show few other examples to compare the statistics.
-
-        The analysis you prepare should be executable with only one query!
+        
         Use only DuckDB functions
+        The analysis you prepare should be executable with only one query!
         """
 
         self.safety_prompt = PromptTemplate.from_template("""You are a security guide. Make sure provided SQL is:
@@ -97,7 +97,7 @@ class StatisticianAgent:
     
     def check_query_llm(self, query: str)->int:
         result = self.safety_check.invoke({"query": query}).content
-        return result.content
+        return result
     
     def execute_query(self, query: str)->str:
         with duckdb.connect("app/database/reviews.duckdb") as con:
