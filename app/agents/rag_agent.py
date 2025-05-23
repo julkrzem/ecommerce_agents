@@ -2,11 +2,13 @@ from langchain_ollama import OllamaEmbeddings
 from langchain_ollama import ChatOllama
 from langchain_chroma import Chroma
 from langchain_core.prompts import PromptTemplate
-from langchain_core.output_parsers.json import JsonOutputParser
-
+from langchain.memory import ConversationBufferMemory
+from langchain_core.messages.ai import AIMessage
+import json
 
 class RagAgent:
-    def __init__(self):
+    def __init__(self, memory):
+        self.memory = memory
         self.embeddings = OllamaEmbeddings(model="snowflake-arctic-embed:33m")
         self.vector_store = Chroma(
             collection_name="ecommerce_reviews",
@@ -19,7 +21,7 @@ class RagAgent:
                  temperature=0)
 
         self.db_filter_prompt = PromptTemplate.from_template(
-            """You are a smart assistant. Your job is to decide if the database should be filtered to answer the user question.
+            """You are a smart assistant. Your job is to construct the most suitable yet simple filter to answer the user question.
 
             Database fields to filter: 
             'clothing_id': ID of item that is reviewed; int [0,1205]
@@ -31,37 +33,45 @@ class RagAgent:
 
             Question: {question}
 
-            If the question requires filtering answer only with: filter key and value:
-            for example if requires filtering by product type: "class_name": "Pants"
-            If it doesn't require filtering answer "no_filter_needed".
+            Do not propose filters that include entire range of values 
+            Wrong answer example: rating=1,2,3,4,5 explaantion: rating is always a number in range 1-5
             
-            Do not provide any further explanation only the filter key value or no_filter_needed.
-            Your answer need to be unambiguous decision."""
+            If it doesn't require filtering answer "no_filter_needed".
+
+            Propose a filter construction in Chroma DB Query Language.
+            Filter may not be necesairy for some question, if base do not require filtering answer "no_filter_needed"
+            
+            Do not provide any further explanation only the filter or no_filter_needed.
+
+            Your answer need to be unambiguous decision.
+            """
             
         )
-        
-        self.select_filter_prompt = PromptTemplate.from_template(
-            """Your job is to prepare a MongoDB syntax for filtering.
-            If there are multiple fields they have to be arranged with and/or operator depending on the context.
-            If there is only one field to filter by never use and/or
 
-            Context: {question}
 
-            Never change names of key and value only strip any additional data and organize as a valid query:
-            {output}
+        self.correct_filter_prompt = PromptTemplate.from_template(
+            """Your job is to prepare a Chroma DB syntax for filtering.
+            Never change names of key and value only strip any additional data and organize as a valid query.
 
-            Return only the query filter and no further explanation.
+            {invalid_query}
+            Return only the correct query filter and no further explanation.
 
             {output_format}
 
-            Answer with JSON WITH ONLY QUERY FILTER in MongoDB Query Language (MQL).
+            Answer ONLY with JSON WITH QUERY FILTER in Chroma DB Query Language.
+            Your answer need to be unambiguous decision.
+            Chroma db expects to have exactly one operator in query!
             """
-            
         )
 
     def needs_filtering(self, question):
         db_filter_chain = self.db_filter_prompt | self.llm 
         return db_filter_chain.invoke({"question" : question}).content
+    
+    def correct_query(self, invalid_query, output_format):
+        correct_filter_chain = self.correct_filter_prompt | self.llm 
+        return correct_filter_chain.invoke({"invalid_query" : invalid_query, "output_format":output_format}).content.strip()
+
     
     def run(self, question):
 
@@ -69,31 +79,37 @@ class RagAgent:
 
         filtering = self.needs_filtering(question)
 
-        if "no_filter_needed" in filtering:
-            results = self.retriever.invoke(question)
-        else:
-            json_parser = JsonOutputParser()
+        if not "no_filter_needed" in filtering:
+            output_format = """
+            Output message in this format if filter consists of one column:
+            {"column_1": {"$eq": "Value_1"}}
 
-            output_format = '''
-            Output format to filter by multiple fields:
+            Output message in this format if filter consists of multiple columns:
             {"$and": [
-                {"field_1": {"$eq": "Value_1"}},
-                {"field_2": {"$eq": "Value_2"}}
+                {"column_1": {"$eq": "Value_1"}},
+                {"column_2": {"$eq": "Value_2"}}
                 ]
             }
+            
+            WARNING
+            Chroma db expects to have exactly one operator in query!
+            """
+            filter_db = self.correct_query(filtering, output_format)
+            
+            try: 
+                parsed_json = json.loads(filter_db)
+                results = self.retriever.invoke(question, filter=parsed_json)
+                print("filter used")
+            except:
+                results = self.retriever.invoke(question)
+                print("filter not used")
 
-            Output format if filter by one field:
-            {"field_1": {"$eq": "Value_1"}}
-            '''
+        else:
+            results = self.retriever.invoke(question)
 
-            select_filters_chain = self.select_filter_prompt | self.llm | json_parser
-            filter_db = select_filters_chain.invoke({"question" : question, "output":filtering, "output_format": output_format})
-            print(filter_db)
-            results = self.retriever.invoke(question, filter=filter_db)
-        
         for res in results:
             retrived_content += f" - {res.page_content} \n"
         
-        print(retrived_content)
-    
+        self.memory.chat_memory.add_message(AIMessage(retrived_content))
+   
         return retrived_content
