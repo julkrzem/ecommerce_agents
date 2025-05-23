@@ -11,7 +11,6 @@ class StatisticianAgent:
         Given an input question, create a syntactically correct DuckDB query to run to help find the user answer. You can order the results by a relevant column to return the most interesting examples in the database.
 
         Then create a syntactically correct single DuckDB query to obtain planned analysis from SQL table.
-
         You can order the results by a relevant column to return the most interesting examples in the database.
 
         Never query for all the columns from a specific table, only ask for a the few relevant columns given the analysis.
@@ -82,12 +81,12 @@ class StatisticianAgent:
     
     def prepare_stat_analysis(self, question: str) -> str:
         result = self.stat_analysis_chain.invoke({"question":question})
-        # print(result)
+        print(result)
         return result.content
 
     def prepare_sql_query(self, question: str, llm_instruction: str) -> str:
         result = self.sql_query_chain.invoke({"question": question, "llm_message":llm_instruction})
-        # print(result)
+        print(result)
         return result.content
     
     def check_query_regex(self, query: str)->int:
@@ -109,7 +108,11 @@ class StatisticianAgent:
         llm_answ = self.prepare_stat_analysis(question)
         llm_answ_2 = self.prepare_sql_query(question, llm_answ)
 
-        extracted_sql = re.findall(r'```sql(.*?)```', llm_answ_2, re.DOTALL)[0].replace("\n"," ").replace("\"","").replace("\'","").strip()
+        if len(re.findall(r'```sql(.*?)```', llm_answ_2, re.DOTALL)) > 0:
+            extracted_sql = re.findall(r'```sql(.*?)```', llm_answ_2, re.DOTALL)[0].replace("\n"," ").replace("\"","").replace("\'","").strip()
+        else:
+            extracted_sql = re.findall(r'SELECT(.*?)\;', llm_answ_2, re.DOTALL)[0]
+            extracted_sql = "SELECT"+extracted_sql
 
         if self.check_query_regex(extracted_sql)==0:
 
@@ -118,8 +121,3 @@ class StatisticianAgent:
                 return self.execute_query(extracted_sql)
         else:
             return "Table modifications are not allowed or query is invalid"
-
-# agent = StatistitianAgent()
-# # user_question = "What type of products (class_name) is getting the lowest rates in the reviews? "
-# user_question = "What type of product (class_name) is getting the most diverse reviews some very low and other very high?"
-# agent.run(user_question)

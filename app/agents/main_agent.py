@@ -2,15 +2,15 @@ from langchain_ollama import ChatOllama
 from langchain_core.prompts import PromptTemplate
 from answer_agent import AnswerAgent
 from rag_agent import RagAgent
-from statistician_agent import StatistitianAgent
+from statistician_agent import StatisticianAgent
 from langchain.output_parsers.json import SimpleJsonOutputParser
 
 
 class MainAgentSupervisor:
     def __init__(self):
-        llm = ChatOllama(model="mistral:7b", 
-                 temperature=0)
-    
+        llm = ChatOllama(model="mistral:7b",
+                         temperature=0)
+        
         context_assesment_prompt = PromptTemplate.from_template(
             """You are a smart assistant. Your job is to decide if there is enough information in provided Information Context to answer user question. The decision must be based on the Information Context. 
             If the Information Context is empty answer NO.
@@ -33,8 +33,6 @@ class MainAgentSupervisor:
             "statistician_agent": performs statistical analysis on the reviews database. Best to use when there is a quantity analysis needed.
 
             "Return a JSON object with an `agent` key, and the exact agent name.
-
-
             """
             
         )
@@ -43,6 +41,7 @@ class MainAgentSupervisor:
         self.agent_selection_chain = agent_selection_prompt | llm | json_parser
         self.answer_llm = AnswerAgent()
         self.rag_agent = RagAgent()
+        self.statisticianAgent = StatisticianAgent()
 
     def context_assesment(self, collected_context, question: str) -> str:
         response = self.context_assesment_chain.invoke({"information_context": collected_context, "question": question}).content.upper()
@@ -61,18 +60,16 @@ class MainAgentSupervisor:
                 return self.answer_llm.invoke(collected_context,question)
             else:
                 agent = self.agent_selection_chain.invoke({"question":question})
+
                 if agent["agent"] == "rag_agent":
+                    print("RAG Agent used")
                     retrived_content = self.rag_agent.run(question)
                     collected_context += retrived_content
-                    print("RAG Agent used")
+                    
 
                 if agent["agent"] == "statistician_agent":
                     print("STAT Agent used")
-                    agent = StatistitianAgent()
+                    agent = self.statisticianAgent
                     collected_context += agent.run(question)
                 
         return "max iterations exceeded"
-    
-agent = MainAgentSupervisor()
-question = "What type of product (class_name) is getting the most extreme standar deviation in the rating column??"
-print(agent.invoke(question))
