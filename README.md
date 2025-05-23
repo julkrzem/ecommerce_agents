@@ -12,7 +12,7 @@ Key features of the application:
 - Context-aware question answering based on the data
 - Agents that can query both SQL database and perform RAG on the vector database
 - Main agent that delegates tasks to sub-agents and collects their responses
-- "Answer agent" that combines the results and provides a final answer
+- Answer agent that combines the results and provides a final answer
 
 
 This project was created as a part of my programing portfolio, based on a Kaggle dataset containing E-Commerce Clothing Reviews (https://www.kaggle.com/datasets/nicapotato/womens-ecommerce-clothing-reviews)
