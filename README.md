@@ -15,18 +15,19 @@ The main.py file defines an API endpoint that can receive requests from a fronte
 
 This universal format allows an easy integration with any frontend capable of sending such requests. By default, the backend expects frontend to manage conversation history for example stored in localStorage. But potentially can be replaced with a backend database that stores user IDs with their message history.
 
-
 Currently, the app consits of: chat and agents, vector database, an SQL database, and scripts for setting up and populating these databases.
 
 Key features of the application:
 - Chat that allows user interaction
-- Context-aware question answering based on the data
+- Context-aware question answering based on the data (e-commerce reviews from Kaggle dataset)
 - Agents that can query both SQL database and perform RAG on the vector database
 - Main agent that delegates tasks to sub-agents and collects their responses
 - Answer agent that combines the results and provides a final answer
 
 
 ### More workflow details:
+
+![workflow](./agentic_system.png)
 
 The system can answer user messages with the context of recent interactions. User can ask the chatbot a general question, that is answered directly by a local LLM or if the question is context-dependent, it is redirected to the agentic system. Agentic system consists of several agents, all based on local LLMs. The main agent acts as a supervisor for the knowledge collection process: it supervises the collected context, both from the conversation memory and from responses provided by the sub-agents. Main agent decides whether more information is needed to answer user’s question, and if so, it determines whether to extract data using RAG or statistical analysis. It calls the suitable sub-agent.
 
@@ -38,5 +39,4 @@ The prompt is designed to encourage the use of statistical functions and aggrega
 The Last Answer agent is currently a simple LLM and a prompt that combines the obtained context into a final answer. Although this agent is very simple for now, implementing it as a separate class allows for future development, it could eventually use additional tools to not only generate a summary of the collected context but also perform actions adjusted to the user instructions and context. 
 
 
-This project was created as a part of my programing portfolio, based on a Kaggle dataset containing E-Commerce Clothing Reviews (https://www.kaggle.com/datasets/nicapotato/womens-ecommerce-clothing-reviews)
-
+This project was created as a part of my programing portfolio, based on a Kaggle dataset containing E-Commerce Clothing Reviews (https://www.kaggle.com/datasets/nicapotato/womens-ecommerce-clothing-reviews).
