@@ -1,13 +1,11 @@
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
-from langchain.memory import ConversationBufferMemory
-from langchain_core.messages.ai import AIMessage
 import re
+from pathlib import Path
 import duckdb
 
 class StatisticianAgent:
-    def __init__(self, memory):
-        self.memory = memory
+    def __init__(self):
         self.llm = ChatOllama(model="mistral:7b", 
                  temperature=0)
         sql_system_message = """
@@ -21,16 +19,18 @@ class StatisticianAgent:
         Pay attention to use only the column names that you can see in the list_columns. Be careful to not query for columns that do not exist. Also, only use the following tables: "reviews"
 
         Columns:
-        'comment_id': Review ID
-        'clothing_id': ID of item that is reviewed; int [0,1205]
+        'comment_id': review id
+        'clothing_id': id of item that is reviewed; int [0,1205]
         'age': age of the review author; int [18,99]
         'rating': rating the reviewer gave to the product; int [1,5]
         'positive_feedback_count': documenting the number of other customers who found this review positive; int
-        'division_name': high level store division; str [General, General Petite, Initmates]
-        'department_name': product department name; str [Tops, Dresses, Bottoms, Intimate, Jackets, Trend]
-        'class_name': product type; str [Intimates, Dresses, Pants, Blouses, Knits, Outerwear,Lounge, Sweaters, Skirts, Fine gauge, Sleep, Jackets,Swim, Trend, Jeans, Legwear, Shorts, Layering,Casual bottoms, Chemises]
+        'division_name': high level store division; str ['general', 'general petite', 'initmates']
+        'department_name': product department name; str ['tops', 'dresses', 'bottoms', 'intimate', 'jackets', 'trend']
+        'class_name': product type; str ['intimates', 'dresses', 'pants', 'blouses', 'knits', 'outerwear', 'lounge', 'sweaters', 'skirts', 'fine gauge', 'sleep', 'jackets', 'swim', 'trend', 'jeans', 'legwear', 'shorts', 'layering', 'casual bottoms', 'chemises']
+
         
         Answer with only one query.
+        Remember that if there is aggregation funciton there always have to be GROUP BY of displayed columns!
 
         Here is the hint for the query preparation:
         {llm_message}
@@ -41,7 +41,15 @@ class StatisticianAgent:
         In plan include only steps that are possible to execute with SQL, but do not output any SQL, only clear instructions for analysis. Do not over complicate, and try to reduce the necessary amount of queries to minimum while maintaining the aim of user question. Do not suggest using any other programs or programing languages other than SQL.
 
         There is only one table: "reviews"
-        With columns: ['clothing_id','age','title','review_text','rating','recommended_ind', 'positive_feedback_count','division_name','department_name','class_name']
+        Columns:
+        'comment_id': review id
+        'clothing_id': id of item that is reviewed; int [0,1205]
+        'age': age of the review author; int [18,99]
+        'rating': rating the reviewer gave to the product; int [1,5]
+        'positive_feedback_count': documenting the number of other customers who found this review positive; int
+        'division_name': high level store division; str ['general', 'general petite', 'initmates']
+        'department_name': product department name; str ['tops', 'dresses', 'bottoms', 'intimate', 'jackets', 'trend']
+        'class_name': product type; str ['intimates', 'dresses', 'pants', 'blouses', 'knits', 'outerwear', 'lounge', 'sweaters', 'skirts', 'fine gauge', 'sleep', 'jackets', 'swim', 'trend', 'jeans', 'legwear', 'shorts', 'layering', 'casual bottoms', 'chemises']
 
         Promote usage of statistical functions like: VAR_POP(), VAR_SAMP(), STDDEV_POP(), STDDEV_SAMP(), AVG()
 
@@ -84,16 +92,16 @@ class StatisticianAgent:
     
     def prepare_stat_analysis(self, question: str) -> str:
         result = self.stat_analysis_chain.invoke({"question":question})
-        print(result)
+        # print(result)
         return result.content
 
     def prepare_sql_query(self, question: str, llm_instruction: str) -> str:
         result = self.sql_query_chain.invoke({"question": question, "llm_message":llm_instruction})
-        print(result)
+        # print(result)
         return result.content
     
     def check_query_regex(self, query: str)->int:
-        words = ["DELETE", "INSERT", "UPDATE", "CREATE", "RECURSIVE"]
+        words = ["DELETE", "INSERT", "UPDATE", "CREATE", "RECURSIVE", "WITH"]
         unsafe_match = re.findall("|".join(words),query)
         return len(unsafe_match)
     
@@ -102,26 +110,32 @@ class StatisticianAgent:
         return result
     
     def execute_query(self, query: str)->str:
-        with duckdb.connect("app/database/reviews.duckdb") as con:
+        database_path = Path(__file__).resolve().parent.parent / "database" / "reviews.duckdb"
+        with duckdb.connect(str(database_path)) as con:
             result = con.execute(query).fetchdf()
         answer = result.to_string()
-        self.memory.chat_memory.add_message(AIMessage(answer))
         return answer
 
     def run(self, question: str)->str:
         llm_answ = self.prepare_stat_analysis(question)
         llm_answ_2 = self.prepare_sql_query(question, llm_answ)
 
+       
         if len(re.findall(r'```sql(.*?)```', llm_answ_2, re.DOTALL)) > 0:
-            extracted_sql = re.findall(r'```sql(.*?)```', llm_answ_2, re.DOTALL)[0].replace("\n"," ").replace("\"","").replace("\'","").strip()
+            extracted_sql = re.findall(r'```sql(.*?)```', llm_answ_2, re.DOTALL)[0].strip()
         else:
             extracted_sql = re.findall(r'SELECT(.*?)\;', llm_answ_2, re.DOTALL)[0]
             extracted_sql = "SELECT"+extracted_sql
+
+        print(extracted_sql)
 
         if self.check_query_regex(extracted_sql)==0:
 
             safety_result = self.check_query_llm(extracted_sql)
             if "YES" in safety_result:
-                return self.execute_query(extracted_sql)
+                try:
+                    return self.execute_query(extracted_sql)
+                except:
+                    return ""
         else:
             return "Table modifications are not allowed or query is invalid"

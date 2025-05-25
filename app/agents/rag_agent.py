@@ -2,18 +2,18 @@ from langchain_ollama import OllamaEmbeddings
 from langchain_ollama import ChatOllama
 from langchain_chroma import Chroma
 from langchain_core.prompts import PromptTemplate
-from langchain.memory import ConversationBufferMemory
-from langchain_core.messages.ai import AIMessage
 import json
 
+from pathlib import Path
+
 class RagAgent:
-    def __init__(self, memory):
-        self.memory = memory
+    def __init__(self):
+        persist_dir = Path(__file__).resolve().parent.parent / "database" / "chroma_db"
         self.embeddings = OllamaEmbeddings(model="snowflake-arctic-embed:33m")
         self.vector_store = Chroma(
             collection_name="ecommerce_reviews",
             embedding_function=self.embeddings,
-            persist_directory="./app/database/chroma_db",
+            persist_directory=str(persist_dir),
         )
         self.retriever = self.vector_store.as_retriever(search_kwargs={"k": 10})
 
@@ -24,12 +24,12 @@ class RagAgent:
             """You are a smart assistant. Your job is to construct the most suitable yet simple filter to answer the user question.
 
             Database fields to filter: 
-            'clothing_id': ID of item that is reviewed; int [0,1205]
+            'clothing_id': id of item that is reviewed; int [0,1205]
             'age': age of the review author; int [18,99]
             'rating': rating the reviewer gave to the product; int [1,5]
-            'division_name': high level store division; str [General, General Petite, Initmates]
-            'department_name': product department name; str [Tops, Dresses, Bottoms, Intimate, Jackets, Trend]
-            'class_name': product type; str [Intimates, Dresses, Pants, Blouses, Knits, Outerwear,Lounge, Sweaters, Skirts, Fine gauge, Sleep, Jackets,Swim, Trend, Jeans, Legwear, Shorts, Layering,Casual bottoms, Chemises]
+            'division_name': high level store division; str ['general', 'general petite', 'initmates']
+            'department_name': product department name; str ['tops', 'dresses', 'bottoms', 'intimate', 'jackets', 'trend']
+            'class_name': product type; str ['intimates', 'dresses', 'pants', 'blouses', 'knits', 'outerwear', 'lounge', 'sweaters', 'skirts', 'fine gauge', 'sleep', 'jackets', 'swim', 'trend', 'jeans', 'legwear', 'shorts', 'layering', 'casual bottoms', 'chemises']
 
             Question: {question}
 
@@ -95,6 +95,8 @@ class RagAgent:
             Chroma db expects to have exactly one operator in query!
             """
             filter_db = self.correct_query(filtering, output_format)
+
+            print(filter_db)
             
             try: 
                 parsed_json = json.loads(filter_db)
@@ -102,14 +104,13 @@ class RagAgent:
                 print("filter used")
             except:
                 results = self.retriever.invoke(question)
-                print("filter not used")
+                print("filter not used - error")
 
         else:
             results = self.retriever.invoke(question)
+            print("filter not used")
 
         for res in results:
             retrived_content += f" - {res.page_content} \n"
-        
-        self.memory.chat_memory.add_message(AIMessage(retrived_content))
    
         return retrived_content

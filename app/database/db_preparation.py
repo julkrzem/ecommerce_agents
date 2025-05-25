@@ -1,4 +1,3 @@
-import os
 import pandas as pd
 from app.agents.rag_agent import RagAgent
 from langchain_core.documents import Document
@@ -6,9 +5,11 @@ from langchain_core.documents import Document
 df = pd.read_csv("app/data/sample.csv")
 
 db = "./app/database/chroma_db"
-columns = ['Comment_id','Clothing ID', 'Age', 'Rating', 'Recommended IND', 'Positive Feedback Count',
-       'Division Name', 'Department Name', 'Class Name', 'Product_name']
+columns = ['comment_id','clothing_id','age','rating',
+           'recommended_ind','positive_feedback_count',
+           'division_name','department_name','class_name']
 
+print(df.columns)
 
 def chunk_text(text, chunk_size=50):
     words = text.split()
@@ -29,7 +30,7 @@ def prepare_documents(df, columns):
               for col in columns:
                      metadata[col.replace(" ","_").lower()] = row[col]
               
-              content = row["Review Text"] if str(row["Title"])=="nan" else str(row["Title"]) + " " + row["Review Text"]
+              content = row["review_text"] if str(row["title"])=="nan" else str(row["title"]) + " " + row["review_text"]
 
               chunks = chunk_text(content)
 

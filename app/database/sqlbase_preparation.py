@@ -2,9 +2,9 @@ import duckdb
 import pandas as pd
 
 
-selected_columns = ['Comment_id', 'Clothing ID', 'Age', 'Rating', 'Recommended IND',
-       'Positive Feedback Count', 'Division Name', 'Department Name',
-       'Class Name']
+selected_columns = ['comment_id','clothing_id','age','rating',
+                    'recommended_ind','positive_feedback_count',
+                    'division_name','department_name','class_name']
 
 df = pd.read_csv("app/data/sample.csv")
 df = df[selected_columns]

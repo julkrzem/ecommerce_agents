@@ -1,25 +1,28 @@
 from langchain_ollama import ChatOllama
-from langchain.memory import ConversationBufferMemory
-from langchain.chains.conversation.base import ConversationChain
 from langchain.prompts import PromptTemplate
 
-from main_agent import MainAgentSupervisor
+from app.agents.main_agent import MainAgentSupervisor
+
 
 class Chat:
-    def __init__(self, memory):
-        self.memory = memory
+    def __init__(self):
 
-        classifier_prompt = PromptTemplate.from_template(
-            """You are a smart assistant. Your job is to decide if the following user message requires external data source or specific tool action to answer their question.
+        self.classifier_prompt = PromptTemplate.from_template(
+            """You are a e-commerce store assistant. Your job is to decide if the following user message requires looking into data from the store database or into company data, or it is only general conversation.
             User question: {question}
-            Answer with only "simple" or "agent".
+
+            Any question regarding the quality, quantity, statistics, score, review content is "company_data" 
+
+            If it is general question answer "simple" simple question means: hello, basic conversation or general question  e.g. "what does a department mean?"
+
+            If it is a question based on company data answer "company_data"
+            
+            Answer with only "simple" or "company_data".
             """)
 
-        system_prompt = """You are a friendly chatbot that answers simply to the user questions. Do not write anything unnecessary, just short answers or follow-up questions to user messages. Keep responses short"""
-
-        prompt = PromptTemplate.from_template(
+        self.prompt = PromptTemplate.from_template(
             """
-            {system_prompt}
+            You are a friendly chatbot that answers simply to the user questions. Do not write anything unnecessary, just short answers or follow-up questions to user messages. Keep responses short.
 
             Previous conversation:
             {history}
@@ -28,44 +31,32 @@ class Chat:
             Assistant:"""
             )
 
-        llm = ChatOllama(model="mistral:7b", 
+        self.llm = ChatOllama(model="mistral:7b", 
                         temperature=0.7)
-        self.conversation = ConversationChain(
-            llm=llm,
-            memory=memory,
-            prompt=prompt.partial(system_prompt=system_prompt), 
-            verbose=True)
-
-        self.classifier_chain = classifier_prompt | llm
+        
+    def create_chain(self, prompt):
+        chain = prompt | self.llm
+        return chain
 
     def use_agent(self, user_input: str) -> bool:
-        result = self.classifier_chain.invoke(user_input).content.lower()
-        return "agent" in result
+        chain = self.create_chain(self.classifier_prompt)
+        result = chain.invoke(user_input).content.lower()
+        return "company_data" in result
 
+    def run(self, user_input: str, history: list) -> str:
 
-    def run(self):
-        print("Start chatting (type 'bye!')\n")
+        history = str(history)
 
-        while True:
-            print(self.memory)
-            user_input = input("What do you want to ask me?: ")
-            if user_input.lower() in {"bye!"}:
-                break
+        if len(history)>=1000:
+            history = history[-1000:]
+        
+        if self.use_agent(user_input):
+            print("complex")
+            agent = MainAgentSupervisor()
+            response = agent.invoke(user_input, history)
+        else:
+            print("simple")
+            chain = self.create_chain(self.prompt)
+            response = chain.invoke({"input": user_input, "history": history}).content
 
-            if self.use_agent(user_input):
-                print("complex")
-                agent = MainAgentSupervisor(self.memory)
-                response = agent.invoke(user_input)
-
-            else:
-                print("simple")
-                response = self.conversation.invoke({"input":user_input})
-                response = response["response"]
-
-            print(response)
-
-
-
-memory = ConversationBufferMemory()
-conversation_chat = Chat(memory)
-conversation_chat.run()
+        return response

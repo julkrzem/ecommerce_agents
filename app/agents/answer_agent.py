@@ -1,12 +1,8 @@
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import PromptTemplate
-from langchain.memory import ConversationBufferMemory
-from langchain_core.messages.ai import AIMessage
-
 
 class AnswerAgent():
-    def __init__(self, memory):
-        self.memory = memory
+    def __init__(self):
         llm = ChatOllama(model="mistral:7b", 
                  temperature=0)
     
@@ -25,5 +21,4 @@ class AnswerAgent():
     def invoke(self, information_context: str, question: str) -> bool:
         print("Final answer agent")
         result = self.main_decision_chain.invoke({"information_context": information_context, "question": question})
-        self.memory.chat_memory.add_message(AIMessage(result.content))
         return result.content
