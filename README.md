@@ -1,4 +1,4 @@
-This repository is an example of a backend of sgentic system written using LangChain, with the aim to provide insights into e-commerce data, in this case product reviews.
+This repository is an example of a backend for agentic system built using LangChain. It is designed to generate insights from e-commerce data. As a knowledge source it uses a database with product reviews sourced from a Kaggle dataset.
 
 The repository is organized into 3 main directories:
 - notebooks: (EDA) and data transformations
@@ -9,11 +9,13 @@ The main.py file defines an API endpoint that can receive requests from a fronte
 
 {
   "input": [
-    { "role": "user", "content": "Question to the chat" }
+    { "role": "user", "content": "Question to the LLM" }
   ]
 }
 
 This universal format allows an easy integration with any frontend capable of sending such requests. By default, the backend expects frontend to manage conversation history for example stored in localStorage. But potentially can be replaced with a backend database that stores user IDs with their message history.
+
+![app](./app_example.png)
 
 Currently, the app consits of: chat and agents, vector database, an SQL database, and scripts for setting up and populating these databases.
 
@@ -39,4 +41,4 @@ The prompt is designed to encourage the use of statistical functions and aggrega
 The Last Answer agent is currently a simple LLM and a prompt that combines the obtained context into a final answer. Although this agent is very simple for now, implementing it as a separate class allows for future development, it could eventually use additional tools to not only generate a summary of the collected context but also perform actions adjusted to the user instructions and context. 
 
 
-This project was created as a part of my programing portfolio, based on a Kaggle dataset containing E-Commerce Clothing Reviews (https://www.kaggle.com/datasets/nicapotato/womens-ecommerce-clothing-reviews).
+This project was created as a part of my programing portfolio, based on a Kaggle dataset containing E-Commerce Clothing Reviews: (https://www.kaggle.com/datasets/nicapotato/womens-ecommerce-clothing-reviews).
