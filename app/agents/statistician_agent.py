@@ -5,6 +5,53 @@ from pathlib import Path
 import duckdb
 
 class StatisticianAgent:
+    """
+    A class representing agent responsible for statistical analysis of the data in SQL database
+
+    Attributes
+    ----------
+    llm : ChatOllama
+        Instance of LLM
+    sql_system_message : str
+        Pompt to create SQL query
+    stat_system_message : str
+        Prompt to create statistical reasoning as a hint to create query
+    safety_prompt: PromptTemplate
+        Template of structured prompt to create a safety check before execution of the query
+    user_message: str
+         Prompt to create user message
+    sql_prompt_template: ChatPromptTemplate
+        Template for the sql prompt
+    stat_analysis_prompt: ChatPromptTemplate
+        Template for the statistical prompt
+    sql_query_chain: Chain
+        LangChain chain to run sql query preparation
+    stat_analysis_chain: Chain
+        LangChain chain to run statistical reasoning
+    safety_check: Chain
+        LangChain chain to run safety check
+
+    Methods
+    -------
+    prepare_stat_analysis(question: str) 
+        Prepares statistical reasoning
+
+    def prepare_sql_query(question: str, llm_instruction: str) 
+        Prepares sql query
+
+    def check_query_regex(query: str)->int:
+        Checks query with regex to identify table modifications
+    
+    def check_query_llm(query: str)->int:
+        Checks query with LLM to identify table modifications or incorrect/dangerous query
+    
+    def execute_query(query: str)->str:
+        Executes query over SQL DB
+
+    def run(question: str)->str:
+        Runs the entire Statistical agent workflow
+
+    """
     def __init__(self):
         self.llm = ChatOllama(model="mistral:7b", 
                  temperature=0)
@@ -91,25 +138,90 @@ class StatisticianAgent:
         self.safety_check = self.safety_prompt | self.llm
     
     def prepare_stat_analysis(self, question: str) -> str:
+        """
+        Prepares statistical reasoning
+
+        Parameters
+        ----------
+        question : str
+            User input question
+
+        Returns
+        -------
+        str
+            Instruction for relevant statistical analysis for the user question
+        """
         result = self.stat_analysis_chain.invoke({"question":question})
-        # print(result)
         return result.content
 
     def prepare_sql_query(self, question: str, llm_instruction: str) -> str:
+        """
+        Prepares SQL query
+
+        Parameters
+        ----------
+        question : str
+            User input question
+        llm_instruction: str
+            LLM instructuion for SQL query generation
+
+        Returns
+        -------
+        str
+            Proposition of the SQL query
+        """
         result = self.sql_query_chain.invoke({"question": question, "llm_message":llm_instruction})
-        # print(result)
         return result.content
     
     def check_query_regex(self, query: str)->int:
+        """
+        Checks query with regex to identify table modifications
+
+        Parameters
+        ----------
+        question : str
+            User input question
+
+        Returns
+        -------
+        int
+            Count of identified unsafe words in SQL query
+        """
         words = ["DELETE", "INSERT", "UPDATE", "CREATE", "RECURSIVE", "WITH"]
         unsafe_match = re.findall("|".join(words),query)
         return len(unsafe_match)
     
     def check_query_llm(self, query: str)->int:
+        """
+        Checks query with LLM to identify table modifications or incorrect/dangerous query
+
+        Parameters
+        ----------
+        question : str
+            User input question
+
+        Returns
+        -------
+        str
+            Corrected query checked for dangerous or incorrect syntax
+        """
         result = self.safety_check.invoke({"query": query}).content
         return result
     
     def execute_query(self, query: str)->str:
+        """
+        Executes query over SQL DB
+
+        Parameters
+        ----------
+        question : str
+            User input question
+
+        Returns
+        -------
+        str
+            Output of the SQL query over DuckDB database
+        """
         database_path = Path(__file__).resolve().parent.parent / "database" / "reviews.duckdb"
         with duckdb.connect(str(database_path)) as con:
             result = con.execute(query).fetchdf()
@@ -117,6 +229,19 @@ class StatisticianAgent:
         return answer
 
     def run(self, question: str)->str:
+        """
+        Runs Statistical agent workflow
+
+        Parameters
+        ----------
+        question : str
+            User input question
+
+        Returns
+        -------
+        str
+            Information collected by statistical analysis from SQL database
+        """
         llm_answ = self.prepare_stat_analysis(question)
         llm_answ_2 = self.prepare_sql_query(question, llm_answ)
 

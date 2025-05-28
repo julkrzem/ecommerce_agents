@@ -46,9 +46,6 @@ def prepare_documents(df, columns):
        return documents, ids
 
 database = RagAgent()
-
-# create_database = not os.path.exists(db)
-
 documents, ids = prepare_documents(df, columns)
 print(documents)
 database.vector_store.add_documents(documents=documents, ids=ids)

@@ -8,6 +8,39 @@ from langchain.output_parsers.json import SimpleJsonOutputParser
 
 
 class MainAgentSupervisor:
+    """
+    A class representing agent responsible for main decisions and supervising other sub-agents and data collection process
+
+    Attributes
+    ----------
+    llm : ChatOllama
+        Instance of LLM
+    context_assesment_prompt : PromptTemplate
+        Template of prompt to check if context is sufficient to answer the question
+    agent_selection_prompt: PromptTemplate
+        Template of prompt to select a sub-agent for context collection
+    json_parser: SimpleJsonOutputParser()
+        Json parser for LangChain chain
+    context_assesment_chain: Chain
+        LangChain chain for context assesment
+    agent_selection_chain: Chain
+        LangChain chain for agent selection
+    answer_llm: Answer Agent
+        Instance of AnswerAgent
+    rag_agent: RagAgent
+        Instance of Rag Agent
+    statistician_agent: StatisticianAgent
+        Instance of Statistician Agent
+    collected_context: str
+        Content from user message history and sub-agents
+
+    Methods
+    -------
+    context_assesment(question: str)
+        Running LLM decision if collected context is sufficient to answer user question
+    invoke(question: str, history: str = None)
+        Executes the Main agentic workflow
+    """
     def __init__(self):
         llm = ChatOllama(model="mistral:7b",
                          temperature=0)
@@ -51,6 +84,21 @@ class MainAgentSupervisor:
 
 
     def invoke(self, question: str, history: str = None) -> str:
+        """
+        Runs the Main agent workflow
+
+        Parameters
+        ----------
+        question: str
+            User input question
+        history: str, optional
+            Chat history from previous messages
+
+        Returns
+        -------
+        str
+            Collected knowledge - text based on the history and sub-agents answers
+        """
 
         self.collected_context = history
         
