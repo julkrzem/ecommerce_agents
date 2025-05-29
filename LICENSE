@@ -1,0 +1,17 @@
+This code is my portfolio provided for viewing purposes only.
+
+No permission is granted to use, copy, or distribute this code without written consent.
+
+This code is provided “AS IS”, without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and noninfringement. In no event shall the author be liable for any claim, damages, or other liability arising from its use.
+
+
+This project uses third-party Python libraries installed via pip, including:
+
+- FastAPI (License: https://github.com/fastapi/fastapi?tab=MIT-1-ov-file#readme)
+- pydantic (License: https://github.com/pydantic/pydantic?tab=MIT-1-ov-file#readme)
+- LangChain (langchain-ollama, langchain-core, langchain-chroma)(License: https://github.com/langchain-ai/langchain?tab=MIT-1-ov-file#readme)
+- pandas(License: https://github.com/pandas-dev/pandas?tab=BSD-3-Clause-1-ov-file#readme)
+- numpy(License: https://github.com/numpy/numpy?tab=License-1-ov-file#readme)
+- duckdb (License: https://github.com/duckdb/duckdb?tab=MIT-1-ov-file#readme)
+- jupyter notebook (License: https://github.com/jupyter/notebook?tab=BSD-3-Clause-1-ov-file#readme)
+- pytest (License: https://github.com/pytest-dev/pytest?tab=MIT-1-ov-file#readme)
