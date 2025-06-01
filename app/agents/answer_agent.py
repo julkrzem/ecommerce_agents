@@ -21,7 +21,8 @@ class AnswerAgent():
     """
     def __init__(self):
         llm = ChatOllama(model="mistral:7b", 
-                 temperature=0)
+                        temperature=0,
+                        base_url = "http://host.docker.internal:11434")
     
         prompt = PromptTemplate.from_template(
             """You are a smart assistant. Your job is to answer the Question based only on the provided Information Context.

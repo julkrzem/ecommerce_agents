@@ -1,7 +1,6 @@
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 import re
-from pathlib import Path
 import duckdb
 
 class StatisticianAgent:
@@ -54,7 +53,8 @@ class StatisticianAgent:
     """
     def __init__(self):
         self.llm = ChatOllama(model="mistral:7b", 
-                 temperature=0)
+                        temperature=0,
+                        base_url = "http://host.docker.internal:11434")
         sql_system_message = """
         Given an input question, create a syntactically correct DuckDB query to run to help find the user answer. You can order the results by a relevant column to return the most interesting examples in the database.
 
@@ -222,7 +222,7 @@ class StatisticianAgent:
         str
             Output of the SQL query over DuckDB database
         """
-        database_path = Path(__file__).resolve().parent.parent / "database" / "reviews.duckdb"
+        database_path = "/app/database/reviews.duckdb"
         with duckdb.connect(str(database_path)) as con:
             result = con.execute(query).fetchdf()
         answer = result.to_string()

@@ -40,5 +40,14 @@ The prompt is designed to encourage the use of statistical functions and aggrega
 
 The Last Answer agent is currently a simple LLM and a prompt that combines the obtained context into a final answer. Although this agent is very simple for now, implementing it as a separate class allows for future development, it could eventually use additional tools to not only generate a summary of the collected context but also perform actions adjusted to the user instructions and context. 
 
+### Redis and Celery
+
+The latest commit focuses on modifications of the API response processing with multiprocessing of API requests and job queue system. This implementation enable quicker processing of the shorter tasks (simpler messages), not delayed by longer-running agent tasks. After a request API immediately returns a job_id and results are stored in Redis for 15 minutes. Job_id can be used in GET requests from the frontend or Postman to retrieve the processed response when it is ready.
+It enables to manage workflow and reduce the risk of runtime error at the endpoint. To implement this components such as: main app, worker process, Redis database and the Chat + Agents have been containerized using Docker. 
+- Redis is used to store the job queue and the results
+- Celery is responsible for multiprocessing while executing Chat methods
+- Main application handles incoming API requests
+
+This implementation enabled to build more stable API and handle processing in a better way
 
 This project was created as a part of my programing portfolio, based on a Kaggle dataset containing E-Commerce Clothing Reviews: (https://www.kaggle.com/datasets/nicapotato/womens-ecommerce-clothing-reviews).

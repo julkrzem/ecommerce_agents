@@ -2,13 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
-
-import json 
-
-from app.agents.conversation_model import Chat
+import requests
+from app.worker_process import process_msg
 
 app = FastAPI()
-chat = Chat()
 
 app.add_middleware(
     CORSMiddleware,
@@ -25,14 +22,17 @@ class ChatRequest(BaseModel):
     input: List[Message]
 
 @app.post("/v1/chat")
-async def chat_endpoint(request: ChatRequest):
+async def process_endpoint(msg: ChatRequest):
+    job = process_msg.delay(msg.model_dump())
+    return {"task_id": job.id}
 
-    if len(request.input)>=5:
-        history = [m.content for m in request.input[-5:-1]]
-    else:
-        history = [m.content for m in request.input[:-1]]
 
-    user_input = request.input[-1].content
-    response = json.dumps(chat.run(user_input, history))
 
-    return response
+@app.get("/v1/results/{job_id}")
+def get_result(job_id: str):
+
+    from worker_process import app as celery_app
+    result = celery_app.AsyncResult(job_id)
+    if result.ready():
+        return {"status": "done", "result": result.result}
+    return {"status": "processing"}

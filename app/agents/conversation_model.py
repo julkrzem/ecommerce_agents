@@ -59,7 +59,8 @@ class Chat:
             )
 
         self.llm = ChatOllama(model="mistral:7b", 
-                        temperature=0.7)
+                        temperature=0,
+                        base_url = "http://host.docker.internal:11434")
         
     def create_chain(self, prompt):
         """

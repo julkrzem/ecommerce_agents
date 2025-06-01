@@ -4,8 +4,6 @@ from langchain_chroma import Chroma
 from langchain_core.prompts import PromptTemplate
 import json
 
-from pathlib import Path
-
 class RagAgent:
     """
     A class representing agent responsible for RAG over vector database
@@ -39,18 +37,17 @@ class RagAgent:
         Executes RAG workflow
     """
     def __init__(self):
-        persist_dir = Path(__file__).resolve().parent.parent / "database" / "chroma_db"
-        self.embeddings = OllamaEmbeddings(model="snowflake-arctic-embed:33m")
+        self.embeddings = OllamaEmbeddings(model="snowflake-arctic-embed:33m",base_url = "http://host.docker.internal:11434")
         self.vector_store = Chroma(
             collection_name="ecommerce_reviews",
             embedding_function=self.embeddings,
-            persist_directory=str(persist_dir),
+            persist_directory="/app/database/chroma_db"
         )
         self.retriever = self.vector_store.as_retriever(search_kwargs={"k": 10})
 
         self.llm = ChatOllama(model="mistral:7b", 
-                 temperature=0,
-                 seed=42)
+                        temperature=0,
+                        base_url = "http://host.docker.internal:11434")
 
         self.db_filter_prompt = PromptTemplate.from_template(
             """You are a smart assistant. Your job is to construct the most suitable yet simple filter to answer the user question.

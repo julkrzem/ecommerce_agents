@@ -7,11 +7,27 @@ This code is provided “AS IS”, without warranty of any kind, express or impl
 
 This project uses third-party Python libraries installed via pip, including:
 
-- FastAPI (License: https://github.com/fastapi/fastapi?tab=MIT-1-ov-file#readme)
-- pydantic (License: https://github.com/pydantic/pydantic?tab=MIT-1-ov-file#readme)
-- LangChain (langchain-ollama, langchain-core, langchain-chroma)(License: https://github.com/langchain-ai/langchain?tab=MIT-1-ov-file#readme)
-- pandas(License: https://github.com/pandas-dev/pandas?tab=BSD-3-Clause-1-ov-file#readme)
-- numpy(License: https://github.com/numpy/numpy?tab=License-1-ov-file#readme)
-- duckdb (License: https://github.com/duckdb/duckdb?tab=MIT-1-ov-file#readme)
-- jupyter notebook (License: https://github.com/jupyter/notebook?tab=BSD-3-Clause-1-ov-file#readme)
-- pytest (License: https://github.com/pytest-dev/pytest?tab=MIT-1-ov-file#readme)
+- FastAPI (https://github.com/fastapi/fastapi?tab=MIT-1-ov-file#readme)
+- pydantic (https://github.com/pydantic/pydantic?tab=MIT-1-ov-file#readme)
+- LangChain (https://github.com/langchain-ai/langchain?tab=MIT-1-ov-file#readme)
+- nest-asyncio (https://github.com/erdewit/nest_asyncio?tab=BSD-2-Clause-1-ov-file#readme)
+- ollama (https://github.com/ollama/ollama-python?tab=MIT-1-ov-file#readme)
+- redis (https://github.com/redis/redis-py?tab=MIT-1-ov-file#readme)
+- requests	(https://github.com/psf/requests?tab=Apache-2.0-1-ov-file#readme)
+- uvicorn	(https://github.com/encode/uvicorn?tab=BSD-3-Clause-1-ov-file#readme)
+- celery (https://github.com/celery/celery?tab=License-1-ov-file#readme)
+
+- duckdb (https://github.com/duckdb/duckdb?tab=MIT-1-ov-file#readme)
+- chromadb (https://github.com/chroma-core/chroma?tab=Apache-2.0-1-ov-file#readme)
+
+- pytest (https://github.com/pytest-dev/pytest?tab=MIT-1-ov-file#readme)
+- pytest-mock (https://github.com/pytest-dev/pytest-mock?tab=MIT-1-ov-file#readme)
+
+- ipykernel	(https://github.com/ipython/ipykernel?tab=BSD-3-Clause-1-ov-file#readme)
+- jupyter notebook (https://github.com/jupyter/notebook?tab=BSD-3-Clause-1-ov-file#readme)
+- pandas(https://github.com/pandas-dev/pandas?tab=BSD-3-Clause-1-ov-file#readme)
+- numpy(https://github.com/numpy/numpy?tab=License-1-ov-file#readme)
+
+Models: 
+- snowflake-arctic-embed: https://ollama.com/library/snowflake-arctic-embed
+- mistral:7b: https://ollama.com/library/mistral
